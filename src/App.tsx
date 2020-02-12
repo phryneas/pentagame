@@ -1,26 +1,43 @@
-import React from 'react';
-import logo from './logo.svg';
-import './App.css';
+import React from "react";
+import { Board } from "./Board";
+import { useSelector, useDispatch } from "react-redux";
+import { RootState } from "./logic/state";
+import { Field, Piece } from "./logic/board";
+import { Phase, game } from "./logic/game";
+
+const actions = game.actions;
 
 const App = () => {
+  const game = useSelector((state: RootState) => state);
+  const dispatch = useDispatch();
+  function onClick(item: number | Piece) {
+    console.log(item);
+    if (typeof item === "number") {
+      // Field
+      if (game.phase === Phase.selectBlackTarget) {
+        dispatch(actions.blackTargetSelected(item));
+      }
+      if (game.phase === Phase.selectGrayTarget) {
+        dispatch(actions.grayTargetSelected(item));
+      }
+    } else {
+      // Piece
+      if (game.phase === Phase.selectPiece) {
+        dispatch(actions.pieceSelected(item));
+      }
+    }
+    if (game.phase === Phase.selectTarget) {
+      dispatch(actions.targetSelected(item));
+    }
+  }
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.tsx</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+    <>
+      <p>Current player: {game.currentPlayer}</p>
+      <p>Current Phase: {Phase[game.phase]}</p>
+      <Board board={game.board} higlightedPiece={undefined} onClick={onClick} />
+    </>
   );
-}
+};
 
 export default App;
