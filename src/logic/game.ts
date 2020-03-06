@@ -1,5 +1,12 @@
 import { createSlice, PayloadAction, Draft } from "@reduxjs/toolkit";
-import { Player, Board, initialBoard, Piece, Color } from "./board";
+import {
+  Player,
+  Board,
+  initialBoard,
+  Piece,
+  Color,
+  reachableFields
+} from "./board";
 import { original } from "immer";
 
 export enum Phase {
@@ -37,6 +44,10 @@ export const game = createSlice({
     },
     pieceSelected(state, { payload }: PayloadAction<Piece>) {
       fromPhases(state, [Phase.selectPiece]);
+      assert(
+        payload.player === state.currentPlayer,
+        "cannot select field with pieces, need to select piece directly"
+      );
       state.selectedPiece = payload;
       queuePhase(state, Phase.selectTarget);
       nextPhase(state);
@@ -61,15 +72,12 @@ export const game = createSlice({
 
       assert(state.selectedPiece !== undefined, "");
       const currentPiece = state.selectedPiece!;
-      /*
-      TODO huh?
       assert(
         reachableFields(state.board, currentPiece.currentPosition).includes(
           targetPosition
         ),
         "Field not reachable"
       );
-      */
 
       if (targetPiece) {
         if (targetPiece.color === Color.black) {

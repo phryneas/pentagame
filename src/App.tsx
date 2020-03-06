@@ -2,7 +2,7 @@ import React from "react";
 import { Board } from "./Board";
 import { useSelector, useDispatch } from "react-redux";
 import { RootState } from "./logic/state";
-import { Piece } from "./logic/board";
+import { Piece, reachableFields } from "./logic/board";
 import { Phase, game } from "./logic/game";
 
 const actions = game.actions;
@@ -31,11 +31,30 @@ const App = () => {
     }
   }
 
+  console.log(game.board);
+
+  const highlightedFields =
+    game.phase === Phase.selectTarget
+      ? reachableFields(game.board, game.selectedPiece?.currentPosition!).map(
+          idx => game.board[idx]
+        )
+      : game.phase === Phase.selectBlackTarget
+      ? game.board.filter(field => field.pieces.length === 0)
+      : game.phase === Phase.selectPiece
+      ? game.board.flatMap(field =>
+          field.pieces.filter(piece => piece.player === game.currentPlayer)
+        )
+      : undefined;
+
   return (
     <>
       <p>Current player: {game.currentPlayer}</p>
       <p>Current Phase: {Phase[game.phase]}</p>
-      <Board board={game.board} higlightedPiece={undefined} onClick={onClick} />
+      <Board
+        board={game.board}
+        higlighted={highlightedFields}
+        onClick={onClick}
+      />
     </>
   );
 };

@@ -12,6 +12,7 @@ export interface Field {
   coord: PolarCoordinateTuple;
   neighbors: number[];
   pieces: Piece[];
+  color?: Color;
 }
 
 const players = ["A", "B"] as const;
@@ -63,7 +64,8 @@ for (let idx = 0; idx < 5; idx++) {
         color: Color.black,
         currentPosition: initialBoard.length
       }
-    ]
+    ],
+    color: idx
   });
 }
 for (let i = 0; i < 5; i++) {
@@ -120,11 +122,17 @@ function addLine(a: Field, b: Field, count: number) {
       isDegree: true
     }).polar();
 
+    if (i === 1) {
+      a.neighbors.push(initialBoard.length);
+    }
+    if (i === count) {
+      b.neighbors.push(initialBoard.length);
+    }
     initialBoard.push({
       coord,
       neighbors: [
         i === 1 ? initialBoard.indexOf(a) : initialBoard.length - 1,
-        i === count - 1 ? initialBoard.indexOf(b) : initialBoard.length + 1
+        i === count ? initialBoard.indexOf(b) : initialBoard.length + 1
       ],
       pieces: []
     });

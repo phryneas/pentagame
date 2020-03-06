@@ -1,12 +1,12 @@
 import React from "react";
-import { Board as BoardType, Color, Piece } from "./logic/board";
+import { Board as BoardType, Color, Piece, Field } from "./logic/board";
 
 interface Props {
   board: BoardType;
-  higlightedPiece?: Piece;
+  higlighted?: Array<Piece | Field>;
   onClick(elem: Piece | number): void;
 }
-export function Board({ board, onClick, higlightedPiece }: Props) {
+export function Board({ board, onClick, higlighted = [] }: Props) {
   return (
     <div
       style={{
@@ -23,7 +23,11 @@ export function Board({ board, onClick, higlightedPiece }: Props) {
             key={idx}
             data-identity={idx}
             style={{
-              border: "1px solid black",
+              border: higlighted.includes(field) ? "2mm solid red" : undefined,
+              backgroundColor:
+                typeof field.color !== "undefined"
+                  ? Color[field.color]
+                  : "black",
               padding: "2mm",
               position: "absolute",
               transformOrigin: "center top",
@@ -35,12 +39,18 @@ export function Board({ board, onClick, higlightedPiece }: Props) {
             onClick={e => {
               e.stopPropagation();
               onClick(idx);
+              console.log(field);
             }}
           >
             {field.pieces.map(piece => (
               <button
                 key={"" + piece.color + piece.player}
-                style={{ backgroundColor: Color[piece.color] }}
+                style={{
+                  backgroundColor: Color[piece.color],
+                  border: higlighted.includes(piece)
+                    ? "2mm solid red"
+                    : undefined
+                }}
                 onClick={e => {
                   e.stopPropagation();
                   onClick(piece);
