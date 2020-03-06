@@ -1,5 +1,5 @@
 import React from "react";
-import { Board as BoardType, Color, Piece, Field } from "./logic/board";
+import { Board as BoardType, Color, Piece } from "./logic/board";
 
 interface Props {
   board: BoardType;
@@ -16,38 +16,42 @@ export function Board({ board, onClick, higlightedPiece }: Props) {
         transform: "translate(-50%, -50%)"
       }}
     >
-      {board.map((field, idx) => (
-        <div
-          key={idx}
-          data-identity={idx}
-          style={{
-            border: "1px solid black",
-            padding: "2mm",
-            position: "absolute",
-            transformOrigin: "center top",
-            transform: `rotate(${field.position + 180}deg) translate(0, ${(10 -
-              field.ring) *
-              50}px) `
-          }}
-          onClick={e => {
-            e.stopPropagation();
-            onClick(idx);
-          }}
-        >
-          {field.pieces.map(piece => (
-            <button
-              key={"" + piece.color + piece.player}
-              style={{ backgroundColor: Color[piece.color] }}
-              onClick={e => {
-                e.stopPropagation();
-                onClick(piece);
-              }}
-            >
-              {piece.player || "👻"}
-            </button>
-          ))}
-        </div>
-      ))}
+      {board.map((field, idx) => {
+        const [ring, deg] = field.coord;
+        return (
+          <div
+            key={idx}
+            data-identity={idx}
+            style={{
+              border: "1px solid black",
+              padding: "2mm",
+              position: "absolute",
+              transformOrigin: "center top",
+              transform: `rotate(${deg}deg) translate(0, ${ring * 75}px) `,
+              borderRadius: "50%",
+              width: 25,
+              height: 25
+            }}
+            onClick={e => {
+              e.stopPropagation();
+              onClick(idx);
+            }}
+          >
+            {field.pieces.map(piece => (
+              <button
+                key={"" + piece.color + piece.player}
+                style={{ backgroundColor: Color[piece.color] }}
+                onClick={e => {
+                  e.stopPropagation();
+                  onClick(piece);
+                }}
+              >
+                {piece.player || "👻"}
+              </button>
+            ))}
+          </div>
+        );
+      })}
     </div>
   );
 }

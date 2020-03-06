@@ -1,6 +1,15 @@
+import {
+  Coordinate,
+  PolarCoordinateTuple,
+  CoordinateType
+} from "coordinate-systems";
+
 export interface Field {
+  /*
   ring: number;
   position: number;
+*/
+  coord: PolarCoordinateTuple;
   neighbors: number[];
   pieces: Piece[];
 }
@@ -28,15 +37,11 @@ export type Board = Field[];
 
 export const initialBoard: Board = [];
 
+let outerRingStart = initialBoard.length;
 for (let idx = 0; idx < 20; idx++) {
   initialBoard.push({
-    ring: 0,
-    position: (idx * 360) / 20,
-    neighbors: [
-      (idx + 20 - 1) % 20,
-      idx + (1 % 20),
-      ...(idx % 5 === 0 ? [20 + idx / 5] : [])
-    ],
+    coord: [8, (idx / 20) * 360],
+    neighbors: [(idx + 20 - 1) % 20, idx + (1 % 20)],
     pieces:
       idx % 4 === 0
         ? players.map(player => ({
@@ -47,42 +52,39 @@ for (let idx = 0; idx < 20; idx++) {
         : []
   });
 }
-initialBoard.push(
-  { ring: 1, position: (0 * 360) / 5, neighbors: [0, 25], pieces: [] },
-  { ring: 1, position: (1 * 360) / 5, neighbors: [4, 26], pieces: [] },
-  { ring: 1, position: (2 * 360) / 5, neighbors: [8, 27], pieces: [] },
-  { ring: 1, position: (3 * 360) / 5, neighbors: [12, 28], pieces: [] },
-  { ring: 1, position: (4 * 360) / 5, neighbors: [16, 29], pieces: [] }
-);
-for (let ring = 2; ring < 7; ring++) {
-  for (let idx = 0; idx < 5; idx++) {
-    initialBoard.push({
-      ring,
-      position: (idx * 360) / 5,
-      neighbors: [20 + (ring - 2) * 5, 20 + ring * 5],
-      pieces: []
-    });
-  }
-}
-for (let idx = 0; idx < 20; idx++) {
+
+let innerRingStart = initialBoard.length;
+for (let idx = 0; idx < 5; idx++) {
   initialBoard.push({
-    ring: 7,
-    position: (idx * 360) / 20,
-    neighbors: [
-      50 + ((idx + 20 - 1) % 20),
-      50 + ((idx + 1) % 20),
-      ...(idx % 5 === 0 ? [45 + idx / 5] : [])
-    ],
-    pieces:
-      idx % 4 === 0
-        ? [
-            {
-              color: Color.black,
-              currentPosition: initialBoard.length
-            }
-          ]
-        : []
+    coord: [3, (idx / 5) * 360 + 180],
+    neighbors: [],
+    pieces: [
+      {
+        color: Color.black,
+        currentPosition: initialBoard.length
+      }
+    ]
   });
+}
+for (let i = 0; i < 5; i++) {
+  addLine(
+    initialBoard[outerRingStart + i * 4],
+    initialBoard[innerRingStart + ((i + 2) % 5)],
+    6
+  );
+  addLine(
+    initialBoard[outerRingStart + i * 4],
+    initialBoard[innerRingStart + ((i + 3) % 5)],
+    6
+  );
+}
+
+for (let i = 0; i < 5; i++) {
+  addLine(
+    initialBoard[innerRingStart + i],
+    initialBoard[innerRingStart + ((i + 1) % 5)],
+    3
+  );
 }
 
 export function reachableFields(board: Board, idx: number) {
@@ -100,4 +102,39 @@ export function reachableFields(board: Board, idx: number) {
       }
   }
   return reachable;
+}
+
+function addLine(a: Field, b: Field, count: number) {
+  for (let i = 1; i <= count; i++) {
+    const [ax, ay] = fromPolar(a.coord).cartesian();
+    const [bx, by] = fromPolar(b.coord).cartesian();
+
+    const [tx, ty] = [
+      ax + ((bx - ax) * i) / (count + 1),
+      ay + ((by - ay) * i) / (count + 1)
+    ];
+
+    const coord = new Coordinate({
+      coordinates: [tx, ty],
+      type: CoordinateType.CARTESIAN_2D,
+      isDegree: true
+    }).polar();
+
+    initialBoard.push({
+      coord,
+      neighbors: [
+        i === 1 ? initialBoard.indexOf(a) : initialBoard.length - 1,
+        i === count - 1 ? initialBoard.indexOf(b) : initialBoard.length + 1
+      ],
+      pieces: []
+    });
+  }
+}
+
+function fromPolar(p: PolarCoordinateTuple) {
+  return new Coordinate({
+    coordinates: p,
+    type: CoordinateType.POLAR,
+    isDegree: true
+  });
 }

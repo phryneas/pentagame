@@ -2,7 +2,7 @@ import React from "react";
 import { Board } from "./Board";
 import { useSelector, useDispatch } from "react-redux";
 import { RootState } from "./logic/state";
-import { Field, Piece } from "./logic/board";
+import { Piece } from "./logic/board";
 import { Phase, game } from "./logic/game";
 
 const actions = game.actions;

@@ -1,12 +1,5 @@
 import { createSlice, PayloadAction, Draft } from "@reduxjs/toolkit";
-import {
-  Player,
-  Board,
-  initialBoard,
-  Piece,
-  reachableFields,
-  Color
-} from "./board";
+import { Player, Board, initialBoard, Piece, Color } from "./board";
 import { original } from "immer";
 
 export enum Phase {
