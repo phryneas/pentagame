@@ -145,10 +145,18 @@ function nextPhase(state: Draft<GameState>) {
 }
 
 function removePiece(state: Draft<GameState>, piece: Piece) {
-  console.log("remove %o from %o", piece, state.board[piece.currentPosition]);
+  console.log(
+    "remove %o from %o",
+    piece,
+    original(state.board[piece.currentPosition])
+  );
+  const found = state.board[piece.currentPosition].pieces.find(
+    p => original(p) === original(piece)
+  )!;
   state.board[piece.currentPosition].pieces = state.board[
     piece.currentPosition
   ].pieces.filter(p => original(p) !== original(piece));
+  return found;
 }
 
 function movePieceToPosition(
@@ -157,7 +165,7 @@ function movePieceToPosition(
   target: number
 ) {
   console.log("movePieceToPosition", [...arguments].map(original));
-  removePiece(state, piece);
+  piece = removePiece(state, piece);
   state.board[target].pieces.push(piece);
   piece.currentPosition = target;
 }

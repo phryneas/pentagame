@@ -8,7 +8,7 @@ export const store = configureStore({
       try {
         return next(action);
       } catch (e) {
-        console.log("message" in e ? e.message : e);
+        console.log(e);
       }
     }
   ],
