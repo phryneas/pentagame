@@ -19,23 +19,29 @@ interface Ctx {
   selectGrayTarget?: boolean;
 }
 
-type Event =
-  | {
-      type: "SELECTED_FIELD";
-      targetField: number;
-    }
-  | {
-      type: "SELECTED_PLAYER_PIECE";
-      targetPiece: number;
-    }
-  | {
-      type: "SELECTED_BLACK_PIECE";
-      targetPiece: number;
-    }
-  | {
-      type: "SELECTED_GRAY_PIECE";
-      targetPiece: number;
-    };
+type WithSender = {
+  sender: Player;
+};
+
+type Event = WithSender &
+  (
+    | {
+        type: "SELECTED_FIELD";
+        targetField: number;
+      }
+    | {
+        type: "SELECTED_PLAYER_PIECE";
+        targetPiece: number;
+      }
+    | {
+        type: "SELECTED_BLACK_PIECE";
+        targetPiece: number;
+      }
+    | {
+        type: "SELECTED_GRAY_PIECE";
+        targetPiece: number;
+      }
+  );
 
 function produceAssign<E extends Event>(fn: (draft: Ctx, e: E) => void) {
   return assign((ctx: Ctx, e: E) => {
@@ -43,6 +49,10 @@ function produceAssign<E extends Event>(fn: (draft: Ctx, e: E) => void) {
       fn(draft, e);
     });
   });
+}
+
+function currentPlayer(ctx: Ctx, e: WithSender) {
+  return ctx.currentPlayer === e.sender;
 }
 
 type Schema = {
@@ -92,9 +102,9 @@ export const machine = Machine<Ctx, Schema, Event>({
     selectPiece: {
       on: {
         SELECTED_PLAYER_PIECE: {
-          cond: (context, event) =>
-            context.currentPlayer ===
-            selectPiece(context, event.targetPiece).player,
+          cond: (ctx, event) =>
+            currentPlayer(ctx, event) &&
+            ctx.currentPlayer === selectPiece(ctx, event.targetPiece).player,
           target: "selectPieceTarget",
           actions: [
             produceAssign((ctx, e) => {
@@ -109,6 +119,7 @@ export const machine = Machine<Ctx, Schema, Event>({
         SELECTED_FIELD: {
           target: "nextAction",
           cond: (ctx, event) =>
+            currentPlayer(ctx, event) &&
             isReachableForCurrentPiece(ctx, event.targetField) &&
             ctx.board[event.targetField].pieces.length === 0,
           actions: [
@@ -121,6 +132,7 @@ export const machine = Machine<Ctx, Schema, Event>({
         SELECTED_PLAYER_PIECE: {
           target: "nextAction",
           cond: (ctx, event) =>
+            currentPlayer(ctx, event) &&
             isReachableForCurrentPiece(
               ctx,
               selectPiece(ctx, event.targetPiece).currentPosition
@@ -141,6 +153,7 @@ export const machine = Machine<Ctx, Schema, Event>({
         SELECTED_BLACK_PIECE: {
           target: "nextAction",
           cond: (ctx, event) =>
+            currentPlayer(ctx, event) &&
             isReachableForCurrentPiece(
               ctx,
               selectPiece(ctx, event.targetPiece).currentPosition
@@ -160,6 +173,7 @@ export const machine = Machine<Ctx, Schema, Event>({
         SELECTED_GRAY_PIECE: {
           target: "nextAction",
           cond: (ctx, event) =>
+            currentPlayer(ctx, event) &&
             isReachableForCurrentPiece(
               ctx,
               selectPiece(ctx, event.targetPiece).currentPosition

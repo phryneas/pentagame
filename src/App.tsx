@@ -29,21 +29,31 @@ const App = () => {
       case Color.black:
         machineDispatch({
           type: "SELECTED_BLACK_PIECE",
-          targetPiece: piece.id
+          targetPiece: piece.id,
+          sender: game.currentPlayer
         });
         break;
       case Color.gray:
-        machineDispatch({ type: "SELECTED_GRAY_PIECE", targetPiece: piece.id });
+        machineDispatch({
+          type: "SELECTED_GRAY_PIECE",
+          targetPiece: piece.id,
+          sender: game.currentPlayer
+        });
         break;
       default:
         machineDispatch({
           type: "SELECTED_PLAYER_PIECE",
-          targetPiece: piece.id
+          targetPiece: piece.id,
+          sender: game.currentPlayer
         });
     }
   }
   function fieldClicked(field: number) {
-    machineDispatch({ type: "SELECTED_FIELD", targetField: field });
+    machineDispatch({
+      type: "SELECTED_FIELD",
+      targetField: field,
+      sender: game.currentPlayer
+    });
   }
 };
 
