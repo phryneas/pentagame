@@ -106,6 +106,6 @@ export function removePiece(state: Ctx, piece: Piece) {
 export function movePieceToPosition(state: Ctx, piece: Piece, target: number) {
   console.log("movePieceToPosition", [...arguments].map(original));
   removePiece(state, piece);
-  state.board[target].pieces.push(piece);
+  state.board[target].pieces.push(piece.id);
   piece.currentPosition = target;
 }

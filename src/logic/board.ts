@@ -11,7 +11,7 @@ export interface Field {
 */
   coord: PolarCoordinateTuple;
   neighbors: number[];
-  pieces: Piece[];
+  pieces: number[];
   color?: Color;
 }
 
@@ -29,6 +29,7 @@ export enum Color {
 }
 
 export interface Piece {
+  id: number;
   player?: Player;
   color: Color;
   currentPosition: number;
@@ -37,6 +38,13 @@ export interface Piece {
 export type Board = Field[];
 
 export const initialBoard: Board = [];
+export const initialPieces: Piece[] = [];
+
+function addPiece(piece: Omit<Piece, "id">) {
+  const id = initialPieces.length;
+  initialPieces.push({ ...piece, id });
+  return id;
+}
 
 let outerRingStart = initialBoard.length;
 for (let idx = 0; idx < 20; idx++) {
@@ -45,11 +53,13 @@ for (let idx = 0; idx < 20; idx++) {
     neighbors: [(idx + 20 - 1) % 20, idx + (1 % 20)],
     pieces:
       idx % 4 === 0
-        ? players.map(player => ({
-            player,
-            color: idx / 4,
-            currentPosition: idx
-          }))
+        ? players.map(player =>
+            addPiece({
+              player,
+              color: idx / 4,
+              currentPosition: idx
+            })
+          )
         : []
   });
 }
@@ -60,10 +70,10 @@ for (let idx = 0; idx < 5; idx++) {
     coord: [3, (idx / 5) * 360 + 180],
     neighbors: [],
     pieces: [
-      {
+      addPiece({
         color: Color.black,
         currentPosition: initialBoard.length
-      }
+      })
     ],
     color: idx
   });

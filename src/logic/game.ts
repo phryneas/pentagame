@@ -5,7 +5,8 @@ import {
   initialBoard,
   Piece,
   Color,
-  reachableFields
+  reachableFields,
+  initialPieces
 } from "./board";
 import { original } from "immer";
 
@@ -18,9 +19,10 @@ export enum Phase {
 
 interface GameState {
   currentPlayer: Player;
-  selectedPiece?: Piece;
+  selectedPiece?: number;
   phase: Phase;
   board: Board;
+  pieces: Piece[];
   phaseQueue: Phase[];
 }
 
@@ -30,6 +32,7 @@ export const game = createSlice({
     currentPlayer: "A",
     phase: Phase.selectPiece,
     board: initialBoard,
+    pieces: initialPieces,
     phaseQueue: []
   } as GameState,
   reducers: {
@@ -42,36 +45,39 @@ export const game = createSlice({
       queuePhase(state, Phase.selectPiece);
       nextPhase(state);
     },
-    pieceSelected(state, { payload }: PayloadAction<Piece>) {
+    pieceSelected(state, { payload }: PayloadAction<number>) {
       fromPhases(state, [Phase.selectPiece]);
       assert(
-        payload.player === state.currentPlayer,
+        state.pieces[payload].player === state.currentPlayer,
         "cannot select field with pieces, need to select piece directly"
       );
       state.selectedPiece = payload;
       queuePhase(state, Phase.selectTarget);
       nextPhase(state);
     },
-    targetSelected(state, { payload }: PayloadAction<number | Piece>) {
+    targetSelected(
+      state,
+      { payload }: PayloadAction<{ field: number } | { piece: number }>
+    ) {
       fromPhases(state, [Phase.selectTarget]);
 
       let targetPosition: number;
       let targetPiece: Piece | undefined;
 
-      if (typeof payload === "number") {
+      if ("field" in payload) {
         assert(
-          state.board[payload].pieces.length === 0,
+          state.board[payload.field].pieces.length === 0,
           "cannot select field with pieces, need to select piece directly"
         );
 
-        targetPosition = payload;
+        targetPosition = payload.field;
       } else {
-        targetPosition = payload.currentPosition;
-        targetPiece = payload;
+        targetPiece = state.pieces[payload.piece];
+        targetPosition = targetPiece.currentPosition;
       }
 
       assert(state.selectedPiece !== undefined, "");
-      const currentPiece = state.selectedPiece!;
+      const currentPiece = state.pieces[state.selectedPiece!];
       assert(
         reachableFields(state.board, currentPiece.currentPosition).includes(
           targetPosition
@@ -82,7 +88,7 @@ export const game = createSlice({
       if (targetPiece) {
         if (targetPiece.color === Color.black) {
           queuePhase(state, Phase.selectBlackTarget);
-          state.selectedPiece = targetPiece;
+          state.selectedPiece = targetPiece.id;
         } else if (targetPiece.color === Color.gray) {
           removePiece(state, targetPiece);
         } else {
@@ -109,7 +115,11 @@ export const game = createSlice({
         state.board[targetPosition].pieces.length === 0,
         "cannot select field with pieces present"
       );
-      movePieceToPosition(state, state.selectedPiece!, targetPosition);
+      movePieceToPosition(
+        state,
+        state.pieces[state.selectedPiece!],
+        targetPosition
+      );
 
       nextPhase(state);
     },
@@ -122,14 +132,22 @@ export const game = createSlice({
         state.board[targetPosition].pieces.length === 0,
         "cannot select field with pieces present"
       );
-      state.board[targetPosition].pieces.push({
+      const newPiece = addPiece(state, {
         color: Color.gray,
         currentPosition: targetPosition
       });
+
+      state.board[targetPosition].pieces.push(newPiece);
       nextPhase(state);
     }
   }
 });
+
+function addPiece(state: Draft<GameState>, piece: Omit<Piece, "id">) {
+  const id = state.pieces.length;
+  state.pieces.push({ ...piece, id });
+  return id;
+}
 
 function queuePhase(state: Draft<GameState>, phase: Phase) {
   state.phaseQueue.push(phase);
@@ -150,13 +168,9 @@ function removePiece(state: Draft<GameState>, piece: Piece) {
     piece,
     original(state.board[piece.currentPosition])
   );
-  const found = state.board[piece.currentPosition].pieces.find(
-    p => original(p) === original(piece)
-  )!;
   state.board[piece.currentPosition].pieces = state.board[
     piece.currentPosition
-  ].pieces.filter(p => original(p) !== original(piece));
-  return found;
+  ].pieces.filter(p => p !== piece.id);
 }
 
 function movePieceToPosition(
@@ -165,8 +179,8 @@ function movePieceToPosition(
   target: number
 ) {
   console.log("movePieceToPosition", [...arguments].map(original));
-  piece = removePiece(state, piece);
-  state.board[target].pieces.push(piece);
+  removePiece(state, piece);
+  state.board[target].pieces.push(piece.id);
   piece.currentPosition = target;
 }
 

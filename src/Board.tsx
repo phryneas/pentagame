@@ -3,10 +3,18 @@ import { Board as BoardType, Color, Piece, Field } from "./logic/board";
 
 interface Props {
   board: BoardType;
+  pieces: Piece[];
   higlighted?: Array<Piece | Field>;
-  onClick(elem: Piece | number): void;
+  fieldClicked(field: number): void;
+  pieceClicked(piece: number): void;
 }
-export function Board({ board, onClick, higlighted = [] }: Props) {
+export function Board({
+  board,
+  pieces,
+  fieldClicked,
+  pieceClicked,
+  higlighted = []
+}: Props) {
   return (
     <div
       style={{
@@ -38,27 +46,29 @@ export function Board({ board, onClick, higlighted = [] }: Props) {
             }}
             onClick={e => {
               e.stopPropagation();
-              onClick(idx);
+              fieldClicked(idx);
               console.log(field);
             }}
           >
-            {field.pieces.map(piece => (
-              <button
-                key={"" + piece.color + piece.player}
-                style={{
-                  backgroundColor: Color[piece.color],
-                  border: higlighted.includes(piece)
-                    ? "2mm solid red"
-                    : undefined
-                }}
-                onClick={e => {
-                  e.stopPropagation();
-                  onClick(piece);
-                }}
-              >
-                {piece.player || "👻"}
-              </button>
-            ))}
+            {field.pieces
+              .map(id => pieces[id])
+              .map(piece => (
+                <button
+                  key={"" + piece.color + piece.player}
+                  style={{
+                    backgroundColor: Color[piece.color],
+                    border: higlighted.includes(piece)
+                      ? "2mm solid aqua"
+                      : undefined
+                  }}
+                  onClick={e => {
+                    e.stopPropagation();
+                    pieceClicked(piece.id);
+                  }}
+                >
+                  {piece.player || "👻"}
+                </button>
+              ))}
           </div>
         );
       })}

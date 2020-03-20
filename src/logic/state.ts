@@ -1,5 +1,6 @@
 import { configureStore, getDefaultMiddleware } from "@reduxjs/toolkit";
 import { game } from "./game";
+import { toast } from "react-toastify";
 
 export const store = configureStore({
   middleware: [
@@ -8,6 +9,7 @@ export const store = configureStore({
       try {
         return next(action);
       } catch (e) {
+        toast(String(e));
         console.log(e);
       }
     }
