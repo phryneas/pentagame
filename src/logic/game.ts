@@ -199,3 +199,26 @@ function assert(valid: boolean, err: string): asserts valid is true {
     throw new Error(err);
   }
 }
+
+export function selectHighlightedFields(game: GameState) {
+  const currentSelectedPiece =
+    typeof game.selectedPiece === "number"
+      ? game.pieces[game.selectedPiece]
+      : undefined;
+
+  const highlightedFields =
+    game.phase === Phase.selectTarget
+      ? reachableFields(game.board, currentSelectedPiece?.currentPosition!).map(
+          idx => game.board[idx]
+        )
+      : game.phase === Phase.selectBlackTarget
+      ? game.board.filter(field => field.pieces.length === 0)
+      : game.phase === Phase.selectPiece
+      ? game.board.flatMap(field =>
+          field.pieces
+            .map(id => game.pieces[id])
+            .filter(piece => piece.player === game.currentPlayer)
+        )
+      : undefined;
+  return highlightedFields;
+}

@@ -6,7 +6,7 @@ interface Props {
   pieces: Piece[];
   higlighted?: Array<Piece | Field>;
   fieldClicked(field: number): void;
-  pieceClicked(piece: number): void;
+  pieceClicked(piece: Piece): void;
 }
 export function Board({
   board,
@@ -63,7 +63,7 @@ export function Board({
                   }}
                   onClick={e => {
                     e.stopPropagation();
-                    pieceClicked(piece.id);
+                    pieceClicked(piece);
                   }}
                 >
                   {piece.player || "👻"}
