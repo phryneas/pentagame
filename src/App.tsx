@@ -4,8 +4,22 @@ import { Piece, Color } from "./logic/board";
 import { machine, selectHighlightedFields } from "./logic/xStateGame";
 import { useMachine } from "@xstate/react";
 
+const connected = machine.withConfig({
+  services: {
+    init(context, event) {
+      console.log("init", event, context);
+      return function(putEvent, onEvent) {
+        console.log("callback initiated", ...arguments);
+        onEvent(function(event) {
+          console.log("event received", event);
+        });
+      };
+    }
+  }
+});
+
 const App = () => {
-  const [machineState, machineDispatch] = useMachine(machine, {
+  const [machineState, machineDispatch] = useMachine(connected, {
     devTools: true
   });
   const { context: game, value: phase } = machineState;

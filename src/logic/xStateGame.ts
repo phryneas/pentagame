@@ -65,169 +65,182 @@ type Schema = {
   };
 };
 
-export const machine = Machine<Ctx, Schema, Event>({
-  context: {
-    currentPlayer: "A",
-    board: initialBoard,
-    pieces: initialPieces
-  },
-  initial: "selectPiece",
-  states: {
-    nextAction: {
-      on: {
-        "": [
-          {
-            target: "selectBlackTarget",
-            cond: ctx => !!ctx.selectBlackTarget,
-            actions: produceAssign<any>(ctx => {
-              ctx.selectBlackTarget = false;
-            })
-          },
-          {
-            target: "selectGrayTarget",
-            cond: ctx => !!ctx.selectGrayTarget,
-            actions: produceAssign<any>(ctx => {
-              ctx.selectGrayTarget = false;
-            })
-          },
-          {
-            target: "selectPiece",
-            actions: produceAssign<any>(ctx => {
-              ctx.currentPlayer = ctx.currentPlayer === "A" ? "B" : "A";
-            })
-          }
-        ]
-      }
+export const machine = Machine<Ctx, Schema, Event>(
+  {
+    context: {
+      currentPlayer: "A",
+      board: initialBoard,
+      pieces: initialPieces
     },
-    selectPiece: {
-      on: {
-        SELECTED_PLAYER_PIECE: {
-          cond: (ctx, event) =>
-            currentPlayer(ctx, event) &&
-            ctx.currentPlayer === selectPiece(ctx, event.targetPiece).player,
-          target: "selectPieceTarget",
-          actions: [
-            produceAssign((ctx, e) => {
-              ctx.selectedPiece = e.targetPiece;
-            })
+    initial: "selectPiece",
+    invoke: {
+      autoForward: true,
+      src: "init"
+    },
+    states: {
+      nextAction: {
+        on: {
+          "": [
+            {
+              target: "selectBlackTarget",
+              cond: ctx => !!ctx.selectBlackTarget,
+              actions: produceAssign<any>(ctx => {
+                ctx.selectBlackTarget = false;
+              })
+            },
+            {
+              target: "selectGrayTarget",
+              cond: ctx => !!ctx.selectGrayTarget,
+              actions: produceAssign<any>(ctx => {
+                ctx.selectGrayTarget = false;
+              })
+            },
+            {
+              target: "selectPiece",
+              actions: produceAssign<any>(ctx => {
+                ctx.currentPlayer = ctx.currentPlayer === "A" ? "B" : "A";
+              })
+            }
           ]
         }
-      }
-    },
-    selectPieceTarget: {
-      on: {
-        SELECTED_FIELD: {
-          target: "nextAction",
-          cond: (ctx, event) =>
-            currentPlayer(ctx, event) &&
-            isReachableForCurrentPiece(ctx, event.targetField) &&
-            ctx.board[event.targetField].pieces.length === 0,
-          actions: [
-            produceAssign((ctx, e) => {
-              movePieceToPosition(ctx, ctx.selectedPiece!, e.targetField);
+      },
+      selectPiece: {
+        on: {
+          SELECTED_PLAYER_PIECE: {
+            cond: (ctx, event) =>
+              currentPlayer(ctx, event) &&
+              ctx.currentPlayer === selectPiece(ctx, event.targetPiece).player,
+            target: "selectPieceTarget",
+            actions: [
+              produceAssign((ctx, e) => {
+                ctx.selectedPiece = e.targetPiece;
+              })
+            ]
+          }
+        }
+      },
+      selectPieceTarget: {
+        on: {
+          SELECTED_FIELD: {
+            target: "nextAction",
+            cond: (ctx, event) =>
+              currentPlayer(ctx, event) &&
+              isReachableForCurrentPiece(ctx, event.targetField) &&
+              ctx.board[event.targetField].pieces.length === 0,
+            actions: [
+              produceAssign((ctx, e) => {
+                movePieceToPosition(ctx, ctx.selectedPiece!, e.targetField);
+                ctx.selectedPiece = undefined;
+              })
+            ]
+          },
+          SELECTED_PLAYER_PIECE: {
+            target: "nextAction",
+            cond: (ctx, event) =>
+              currentPlayer(ctx, event) &&
+              isReachableForCurrentPiece(
+                ctx,
+                selectPiece(ctx, event.targetPiece).currentPosition
+              ),
+            actions: produceAssign((ctx, e) => {
+              const startPosition = selectCurrentPiece(ctx)!.currentPosition;
+              const targetPiece = selectPiece(ctx, e.targetPiece);
+              movePieceToPosition(
+                ctx,
+                ctx.selectedPiece!,
+                targetPiece.currentPosition
+              );
+              movePieceToPosition(ctx, targetPiece.id, startPosition);
+
               ctx.selectedPiece = undefined;
             })
-          ]
-        },
-        SELECTED_PLAYER_PIECE: {
-          target: "nextAction",
-          cond: (ctx, event) =>
-            currentPlayer(ctx, event) &&
-            isReachableForCurrentPiece(
-              ctx,
-              selectPiece(ctx, event.targetPiece).currentPosition
-            ),
-          actions: produceAssign((ctx, e) => {
-            const startPosition = selectCurrentPiece(ctx)!.currentPosition;
-            const targetPiece = selectPiece(ctx, e.targetPiece);
-            movePieceToPosition(
-              ctx,
-              ctx.selectedPiece!,
-              targetPiece.currentPosition
-            );
-            movePieceToPosition(ctx, targetPiece.id, startPosition);
+          },
+          SELECTED_BLACK_PIECE: {
+            target: "nextAction",
+            cond: (ctx, event) =>
+              currentPlayer(ctx, event) &&
+              isReachableForCurrentPiece(
+                ctx,
+                selectPiece(ctx, event.targetPiece).currentPosition
+              ),
+            actions: produceAssign((ctx, e) => {
+              const targetPiece = selectPiece(ctx, e.targetPiece);
+              movePieceToPosition(
+                ctx,
+                ctx.selectedPiece!,
+                targetPiece.currentPosition
+              );
 
-            ctx.selectedPiece = undefined;
-          })
-        },
-        SELECTED_BLACK_PIECE: {
-          target: "nextAction",
-          cond: (ctx, event) =>
-            currentPlayer(ctx, event) &&
-            isReachableForCurrentPiece(
-              ctx,
-              selectPiece(ctx, event.targetPiece).currentPosition
-            ),
-          actions: produceAssign((ctx, e) => {
-            const targetPiece = selectPiece(ctx, e.targetPiece);
-            movePieceToPosition(
-              ctx,
-              ctx.selectedPiece!,
-              targetPiece.currentPosition
-            );
+              ctx.selectedPiece = targetPiece.id;
+              ctx.selectBlackTarget = true;
+            })
+          },
+          SELECTED_GRAY_PIECE: {
+            target: "nextAction",
+            cond: (ctx, event) =>
+              currentPlayer(ctx, event) &&
+              isReachableForCurrentPiece(
+                ctx,
+                selectPiece(ctx, event.targetPiece).currentPosition
+              ),
+            actions: produceAssign((ctx, e) => {
+              const targetPiece = selectPiece(ctx, e.targetPiece);
+              movePieceToPosition(
+                ctx,
+                ctx.selectedPiece!,
+                targetPiece.currentPosition
+              );
 
-            ctx.selectedPiece = targetPiece.id;
-            ctx.selectBlackTarget = true;
-          })
-        },
-        SELECTED_GRAY_PIECE: {
-          target: "nextAction",
-          cond: (ctx, event) =>
-            currentPlayer(ctx, event) &&
-            isReachableForCurrentPiece(
-              ctx,
-              selectPiece(ctx, event.targetPiece).currentPosition
-            ),
-          actions: produceAssign((ctx, e) => {
-            const targetPiece = selectPiece(ctx, e.targetPiece);
-            movePieceToPosition(
-              ctx,
-              ctx.selectedPiece!,
-              targetPiece.currentPosition
-            );
-
-            removePiece(ctx, targetPiece.id);
-            ctx.selectedPiece = undefined;
-          })
+              removePiece(ctx, targetPiece.id);
+              ctx.selectedPiece = undefined;
+            })
+          }
         }
-      }
-    },
-    selectBlackTarget: {
-      on: {
-        SELECTED_FIELD: {
-          cond: (ctx, e) => selectField(ctx, e.targetField).pieces.length === 0,
-          target: "nextAction",
-          actions: produceAssign((ctx, e) => {
-            movePieceToPosition(ctx, ctx.selectedPiece!, e.targetField);
+      },
+      selectBlackTarget: {
+        on: {
+          SELECTED_FIELD: {
+            cond: (ctx, e) =>
+              selectField(ctx, e.targetField).pieces.length === 0,
+            target: "nextAction",
+            actions: produceAssign((ctx, e) => {
+              movePieceToPosition(ctx, ctx.selectedPiece!, e.targetField);
 
-            ctx.selectedPiece = undefined;
-            ctx.selectBlackTarget = false;
-          })
+              ctx.selectedPiece = undefined;
+              ctx.selectBlackTarget = false;
+            })
+          }
         }
-      }
-    },
-    selectGrayTarget: {
-      on: {
-        SELECTED_FIELD: {
-          cond: (ctx, e) => selectField(ctx, e.targetField).pieces.length === 0,
-          target: "nextAction",
-          actions: produceAssign((ctx, e) => {
-            const targetField = selectField(ctx, e.targetField);
-            const newPiece: Piece = {
-              id: ctx.pieces.length,
-              color: Color.gray,
-              currentPosition: e.targetField
-            };
-            ctx.pieces.push(newPiece);
-            targetField.pieces.push(newPiece.id);
+      },
+      selectGrayTarget: {
+        on: {
+          SELECTED_FIELD: {
+            cond: (ctx, e) =>
+              selectField(ctx, e.targetField).pieces.length === 0,
+            target: "nextAction",
+            actions: produceAssign((ctx, e) => {
+              const targetField = selectField(ctx, e.targetField);
+              const newPiece: Piece = {
+                id: ctx.pieces.length,
+                color: Color.gray,
+                currentPosition: e.targetField
+              };
+              ctx.pieces.push(newPiece);
+              targetField.pieces.push(newPiece.id);
 
-            ctx.selectGrayTarget = false;
-          })
+              ctx.selectGrayTarget = false;
+            })
+          }
         }
       }
     }
+  },
+  {
+    services: {
+      init: () => () => {}
+    }
   }
-});
+);
 
 function isReachableForCurrentPiece(ctx: Ctx, targetField: number) {
   return reachableFields(
